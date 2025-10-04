@@ -1,0 +1,1 @@
+SESSION_EXPIRE_MINUTES = 5 #change here if needed
