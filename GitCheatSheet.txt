@@ -1,0 +1,42 @@
+🌿 Git Branch Workflow Cheat Sheet (For FE & BE)
+✅ Setup (only once per repo)
+# Make sure you are on main and up to date
+git checkout main
+git pull origin main
+
+✅ Create a new feature branch
+# Replace <feature-name> with your feature
+git checkout -b feature/<feature-name>
+
+✅ Work on your feature
+# After making changes
+git add .
+git commit -m "Implement <feature-name>"
+
+✅ Push your feature branch to GitHub
+git push -u origin feature/<feature-name>
+
+✅ Update your feature branch with latest main (if needed)
+git checkout feature/<feature-name>
+git pull origin main
+
+✅ Merge feature branch into main (after testing/PR review)
+git checkout main
+git pull origin main
+git merge feature/<feature-name>
+git push origin main
+
+✅ Delete branch (after merge, cleanup)
+# Local delete
+git branch -d feature/<feature-name>
+
+# Remote delete
+git push origin --delete feature/<feature-name>
+
+🌟 Branch Naming Convention
+
+feature/<feature-name> → for new features
+
+bugfix/<bug-name> → for fixing bugs
+
+hotfix/<hotfix-name> → for urgent fixes
