@@ -1,0 +1,50 @@
+{
+  "loginPage": {
+    "header": "Login",
+    "input1": {
+      "text": "E-mail",
+      "hint": "Enter your email",
+      "mandatory": true,
+      "mandatoryError": "Please enter your Email"
+    },
+    "input2": {
+      "text": "Password",
+      "hint": "Enter your password",
+      "mandatory": true,
+      "mandatoryError": "Incorrect! Please check your Email or Password."
+    },
+    "forgetPassword": {
+      "visibility": true,
+      "text": "Forgot Password?"
+    },
+    "submitCTAText": "Login",
+    "separatorText": "or login with",
+    "googleFlow": {
+      "visibility": true,
+      "text": "Login with Google",
+      "icon": ""
+    }
+  },
+  "signupPage": {
+    "header": "Register",
+    "input1": {
+      "text": "E-mail",
+      "hint": "Enter your Email",
+      "mandatory": true,
+      "mandatoryerror": "Please enter your Email"
+    },
+    "input2": {
+      "text": "Password",
+      "hint": "Create your password",
+      "mandatory": true,
+      "mandatoryError": "Kindly create your password"
+    },
+    "input3": {
+      "text": "Confirm Password",
+      "hint": "Confirm your password",
+      "mandatory": true,
+      "mandatoryError": "Password mismatch, please check again"
+    },
+    "submitCTAText": "Create Account"
+  }
+}
