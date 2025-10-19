@@ -1,10 +1,12 @@
 # To run the backend server - uvicorn main:app --reload
+# uvicorn main:app --host 0.0.0.0 --port 8000
 # To run the frontend - npx expo start
 
-from fastapi import FastAPI, UploadFile, Form, Depends, Header, HTTPException
+from fastapi import FastAPI, UploadFile, Form, Depends, Header, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import Request
 from fastapi.responses import JSONResponse
+from fastapi_utils.tasks import repeat_every  # auto background scheduler
 
 from slowapi import Limiter
 from slowapi.util import get_remote_address
@@ -12,7 +14,7 @@ from slowapi.errors import RateLimitExceeded
 
 from auth import get_current_user
 import pdfplumber
-import os
+import os, json, asyncio, time
 from pydantic import BaseModel
 import sqlite3
 import secrets
@@ -154,4 +156,64 @@ async def validate_session(current=Depends(get_current_user), authorization: str
         "status": "success",
         "user": row[0],
         "token": session_token
+    }
+
+# Caching of CXE file (Config)
+
+CONTENT_FILE_PATH = "content/content.json"
+ACCESS_KEY = "testCXE"
+CACHE_REFRESH_INTERVAL = 600  # 10 minutes
+
+# Cache state
+content_cache = {"data": None, "last_loaded": None}
+
+# Load content from file
+def load_content_file():
+    try:
+        with open(CONTENT_FILE_PATH, "r", encoding="utf-8") as f:
+            content = json.load(f)
+            return content
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="Content file not found")
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=500, detail="Invalid JSON in content file")
+
+# Background auto-refresh task
+@app.on_event("startup")
+@repeat_every(seconds=CACHE_REFRESH_INTERVAL)
+def refresh_content_cache_task() -> None:
+    try:
+        new_data = load_content_file()
+        content_cache["data"] = new_data
+        content_cache["last_loaded"] = datetime.now().isoformat()
+        print(f"[CACHE] Refreshed content cache at {content_cache['last_loaded']}")
+    except Exception as e:
+        print(f"[CACHE ERROR] Failed to refresh content cache: {e}")
+
+# Manual refresh (optional admin endpoint)
+@app.post("/content/reload")
+async def reload_content(access: str = Query(None)):
+    if access != ACCESS_KEY:
+        raise HTTPException(status_code=403, detail="Invalid access key")
+
+    new_data = load_content_file()
+    content_cache["data"] = new_data
+    content_cache["last_loaded"] = datetime.now().isoformat()
+    return {"status": "success", "message": "Content cache manually reloaded"}
+
+# Public content endpoint
+@app.get("/content")
+async def get_content(access: str = Query(None)):
+    if access != ACCESS_KEY:
+        raise HTTPException(status_code=403, detail="Invalid or missing access key")
+
+    # Load cache on first request if not done yet
+    if not content_cache["data"]:
+        content_cache["data"] = load_content_file()
+        content_cache["last_loaded"] = datetime.now().isoformat()
+
+    return {
+        "status": "success",
+        "cache_time": content_cache["last_loaded"],
+        "data": content_cache["data"]
     }
