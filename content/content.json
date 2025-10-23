@@ -46,5 +46,34 @@
       "mandatoryError": "Password mismatch, please check again"
     },
     "submitCTAText": "Create Account"
+  },
+  "addExpensePage": {
+    "title": "Add New Expense",
+    "input1": {
+      "text": "Date"
+    },
+    "input2": {
+      "text": "Type of Expense",
+      "hint": "Select Expense Type",
+      "List": [
+        "Cafeteria",
+        "Uber/Rapido",
+        "Flat",
+        "Self",
+        "Others"
+      ]
+    },
+    "input3": {
+      "text": "Description",
+      "hint": "Add remarks or details..."
+    },
+    "input4": {
+      "text": "Amount (₹)",
+      "hint": "Enter total amount"
+    },
+    "buttons": {
+      "cta1": "Cancel",
+      "cta2": "Save"
+    }
   }
 }
