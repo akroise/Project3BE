@@ -18,7 +18,7 @@ import json
 from pydantic import BaseModel, Field
 import sqlite3
 import secrets
-from passlib.hash import bcrypt
+from passlib.hash import bcrypt, bcrypt_sha256
 from datetime import datetime, timedelta
 from config import SESSION_EXPIRE_MINUTES
 
@@ -64,7 +64,7 @@ class ExpenseRequest(BaseModel):
 
 # --- Apply rate limit to login route ---
 @app.post("/login")
-@limiter.limit("5/minute")   # max 5 requests per minute per IP
+@limiter.limit("5/minute")
 async def login(req: LoginRequest, request: Request):
     conn = sqlite3.connect("expense_tracker.db")
     cursor = conn.cursor()
@@ -72,22 +72,42 @@ async def login(req: LoginRequest, request: Request):
     cursor.execute("SELECT id, password FROM users WHERE username=?", (req.username,))
     row = cursor.fetchone()
 
-    if row and bcrypt.verify(req.password, row[1]):
+    if row:
+        stored_hash = row[1]
         user_id = row[0]
-        session_token = secrets.token_hex(32)
-        now = datetime.now().isoformat()
+        password = req.password
 
-        cursor.execute("""
-        INSERT INTO sessions (user_id, session_token, created_at, last_active_at)
-        VALUES (?, ?, ?, ?)
-        """, (user_id, session_token, now, now))
+        is_valid = False
+        try:
+            is_valid = bcrypt_sha256.verify(password, stored_hash)
+        except ValueError:
+            try:
+                # truncate long passwords for old bcrypt hashes
+                short_pw = password[:72]
+                is_valid = bcrypt.verify(short_pw, stored_hash)
+                if is_valid:
+                    # upgrade to bcrypt_sha256 using the full original password
+                    new_hash = bcrypt_sha256.hash(password)
+                    cursor.execute("UPDATE users SET password=? WHERE id=?", (new_hash, user_id))
+                    conn.commit()
+                    print(f"✅ Upgraded user {user_id} to bcrypt_sha256")
+            except Exception as e:
+                print(f"⚠️ Password verification failed for user {user_id}: {e}")
+                is_valid = False
 
-        conn.commit()
-        conn.close()
+        if is_valid:
+            session_token = secrets.token_hex(32)
+            now = datetime.now().isoformat()
+            cursor.execute("""
+            INSERT INTO sessions (user_id, session_token, created_at, last_active_at)
+            VALUES (?, ?, ?, ?)
+            """, (user_id, session_token, now, now))
+            conn.commit()
+            conn.close()
+            return {"status": "success", "message": "Login successful",
+                    "session_token": session_token, "user_id": user_id}
 
-        return {"status": "success", "message": "Login successful","session_token":session_token, "user_id":user_id}
-    
-    conn.close()    
+    conn.close()
     return {"status": "error", "message": "Invalid credentials"}
 
 # profile page details
