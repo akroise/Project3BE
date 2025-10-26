@@ -1,5 +1,5 @@
 import sqlite3
-from passlib.hash import bcrypt
+import bcrypt
 from datetime import datetime
 
 def init_db():
@@ -21,20 +21,27 @@ def init_db():
 
 
 # --- during user signup / insertion ---
-def add_user(username: str, password: str):
-    conn = sqlite3.connect("expense_tracker.db")
-    cursor = conn.cursor()
+def add_user(username: str, password: str) -> None:
+    """
+    Adds a new user to the SQLite database with hashed password.
+    Compatible with Python 3.10+ and safe DB handling.
+    """
 
-    hashed_pw = bcrypt.hash(password)
+    # Generate password hash using bcrypt
+    hashed_pw = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
     created_at = datetime.now().isoformat()
 
-    cursor.execute("""
-    INSERT INTO users (username, password, plain_password, created_at) 
-    VALUES (?, ?, ?, ?)
-    """, (username, hashed_pw, password, created_at))
-
-    conn.commit()
-    conn.close()
+    # Use context manager to ensure DB is closed automatically
+    with sqlite3.connect("expense_tracker.db") as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            INSERT INTO users (username, password, plain_password, created_at)
+            VALUES (?, ?, ?, ?)
+            """,
+            (username, hashed_pw, password, created_at),
+        )
+        conn.commit()
 
 
 # Create table command
@@ -51,7 +58,7 @@ def add_user(username: str, password: str):
 
 # try:
 #     print("Inserting User....")
-#     add_user("user","1234")
+#     add_user("user","abcd1234")
 #     print("Insertion Done....")
 # except Exception as error:
 #     print(error)
