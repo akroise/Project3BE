@@ -2,7 +2,8 @@
 # uvicorn main:app --host 0.0.0.0 --port 8000
 # To run the frontend - npx expo start
 
-from fastapi import FastAPI, UploadFile, Form, Depends, Header, HTTPException, Query
+from fastapi import FastAPI, UploadFile, Form, Depends, Header, HTTPException, Query, status, File
+from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import Request
 from fastapi.responses import JSONResponse
@@ -26,6 +27,9 @@ from utils.response import success_response, error_response
 
 from calendar import month_abbr
 from typing import Optional
+import os
+from fastapi import Request
+import shutil
 
 app = FastAPI()
 
@@ -584,3 +588,85 @@ async def get_expense_feed(
             code="SERVER_ERROR",
             details=str(e)
         )
+
+# Download Db call
+@app.get("/download-db", tags=["Admin"])
+def download_db(request: Request, current_user: dict = Depends(get_current_user)):
+    """
+    Secure endpoint to download the current SQLite database file.
+    Only authenticated users (admins or valid users) can access.
+    """
+    # 🔍 Debug incoming request headers
+    # print("===== REQUEST DEBUG =====")
+    # print("Headers:", dict(request.headers))
+    # print("=========================")
+    
+    # ✅ (Optional) Role-based restriction — uncomment if you have user roles
+    # if not current_user.get("is_admin", False):
+    #     raise HTTPException(
+    #         status_code=status.HTTP_403_FORBIDDEN,
+    #         detail="You are not authorized to access this resource"
+    #     )
+
+    db_path = os.path.join(os.getcwd(), "expense_tracker.db")
+
+    if not os.path.exists(db_path):
+        raise HTTPException(status_code=404, detail="Database file not found")
+
+    return FileResponse(
+        path=db_path,
+        filename="expense_tracker.db",
+        media_type="application/octet-stream"
+    )
+
+# Upload file (Don't touch)
+# @app.post("/upload-db", tags=["Admin"])
+# async def upload_db(
+#     request: Request,
+#     file: UploadFile = File(...),
+#     current_user: dict = Depends(get_current_user)
+# ):
+#     """
+#     Secure endpoint to upload a new SQLite database file.
+#     Replaces the existing expense_tracker.db.
+#     """
+#     # 🔍 Debug incoming headers
+#     # print("===== REQUEST DEBUG =====")
+#     # print("Headers:", dict(request.headers))
+#     # print("=========================")
+
+#     # (Optional) Restrict to admin users only
+#     # if not current_user.get("is_admin", False):
+#     #     raise HTTPException(status_code=403, detail="You are not authorized to upload the DB")
+
+#     # Validate file type
+#     if not file.filename.endswith(".db"):
+#         raise HTTPException(status_code=400, detail="Only .db files are allowed")
+
+#     # Define destination
+#     db_dir = os.getcwd()
+#     os.makedirs(db_dir, exist_ok=True)
+#     db_path = os.path.join(db_dir, "expense_tracker.db")
+
+#     try:
+#         # Save uploaded file temporarily
+#         temp_path = db_path + ".tmp"
+#         with open(temp_path, "wb") as buffer:
+#             shutil.copyfileobj(file.file, buffer)
+
+#         # Replace old DB atomically
+#         os.replace(temp_path, db_path)
+
+#         print(f"✅ Database replaced successfully at {db_path}")
+
+#         return JSONResponse(
+#             content={
+#                 "status": "success",
+#                 "message": f"Database uploaded and replaced successfully.",
+#                 "filename": file.filename
+#             },
+#             status_code=200
+#         )
+#     except Exception as e:
+#         print(f"❌ Upload failed: {e}")
+#         raise HTTPException(status_code=500, detail=f"Failed to upload DB: {e}")
