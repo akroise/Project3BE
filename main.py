@@ -119,6 +119,12 @@ async def login(req: LoginRequest, request: Request):
 async def get_profile(user_id: int = Depends(get_current_user)):
     return {"status": "success", "user_id": user_id, "profile": "User profile data here"}
 
+# Health status check
+@app.get("/health")
+def health_check():
+    return {"status": "ok"}
+
+
 # logout call
 @app.post("/logout")
 async def logout(user_id: int = Depends(get_current_user), authorization: str = Header(None)):
