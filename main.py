@@ -2,7 +2,7 @@
 # uvicorn main:app --host 0.0.0.0 --port 8000
 # To run the frontend - npx expo start
 
-from fastapi import FastAPI, UploadFile, Form, Depends, Header, HTTPException, Query, status, File
+from fastapi import FastAPI, UploadFile, Form, Depends, Header, HTTPException, Query, status, File, APIRouter, Response
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import Request
@@ -120,9 +120,9 @@ async def get_profile(user_id: int = Depends(get_current_user)):
     return {"status": "success", "user_id": user_id, "profile": "User profile data here"}
 
 # Health status check
-@app.get("/health")
+@app.api_route("/health", methods=["GET", "HEAD", "OPTIONS"])
 def health_check():
-    return {"status": "ok"}
+    return Response(content='{"status": "ok"}', media_type="application/json")
 
 
 # logout call
